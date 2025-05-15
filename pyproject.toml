@@ -1,0 +1,41 @@
+# Parts of this pyproject.toml were taken from
+# https://github.com/radionets-project/pyvisgen/blob/main/pyproject.toml
+
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm[toml]>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orbital_simulation"
+dynamic = ["version"]
+description = "A python based boiler-plate simulation for n-body gravity simulations."
+readme = "README.md"
+authors = [{ name = "Tom Groß" }]
+maintainers = [{ name = "Tom Groß", email = "tom.gross@tu-dortmund.de" }]
+license = { text = "MIT" }
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Astronomy",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Development Status :: 4 - Beta",
+]
+requires-python = ">=3.13"
+dependencies = [
+  "numpy",
+  "matplotlib",
+  "tqdm",
+  "jupyterlab",
+  "toml",
+  "catppuccin",
+  "astropy",
+  "pre-commit"
+]
+
+[tool.setuptools_scm]
+write_to = "orbital_simulation/_version.py"
+
+[tool.setuptools.packages.find]
+where = ["."]
