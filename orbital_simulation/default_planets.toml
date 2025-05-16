@@ -1,0 +1,60 @@
+[sun]
+mass = 1.9887318999745293e+30
+equatorial_radius = 696488520.0
+body_color = "orange"
+trail_color = "gold"
+
+[mercury]
+mass = 3.302608830888633e+23
+equatorial_radius = 2442174.49
+body_color = "dimgray"
+trail_color = "lightgray"
+
+[earth]
+mass = 5.972167867791379e+24
+equatorial_radius = 6378100.0
+body_color = "royalblue"
+trail_color = "skyblue"
+
+[moon]
+mass = 7.345766477383396e+22
+equatorial_radius = 1739307.8699999999
+body_color = "slategray"
+trail_color = "gainsboro"
+
+[venus]
+mass = 4.867316812249974e+24
+equatorial_radius = 6058557.1899999995
+body_color = "darkgoldenrod"
+trail_color = "khaki"
+
+[mars]
+mass = 6.390219618536776e+23
+equatorial_radius = 3393149.2
+body_color = "firebrick"
+trail_color = "salmon"
+
+[jupiter]
+mass = 1.898134113420134e+27
+equatorial_radius = 69967757.0
+body_color = "saddlebrown"
+trail_color = "burlywood"
+
+[saturn]
+mass = 5.683234386347633e+26
+equatorial_radius = 58295834.0
+body_color = "chocolate"
+trail_color = "navajowhite"
+
+[uranus]
+mass = 8.681143212621549e+25
+equatorial_radius = 25391216.099999998
+body_color = "teal"
+trail_color = "mediumturquoise"
+
+[neptune]
+mass = 1.0240476242901878e+26
+equatorial_radius = 24651356.5
+body_color = "midnightblue"
+trail_color = "cornflowerblue"
+
