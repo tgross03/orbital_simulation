@@ -28,6 +28,7 @@ dependencies = [
   "matplotlib",
   "tqdm",
   "jupyterlab",
+  "ipywidgets",
   "toml",
   "catppuccin",
   "astropy",
