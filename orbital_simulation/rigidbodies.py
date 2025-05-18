@@ -5,6 +5,7 @@ from astropy import units as u
 from astropy.constants import R_earth
 from astropy.coordinates import get_body_barycentric_posvel
 from astropy.time import Time
+from pathlib import Path
 
 MARKER_SIZE = mpl.rcParams["lines.markersize"]
 
@@ -147,8 +148,11 @@ class Rigidbody:
 
     @classmethod
     def from_name(
-        cls, name, time=Time.now(), marker="o", config="default_planets.toml"
+        cls, name, time=Time.now(), marker="o", config=None
     ):
+
+        if config is None:
+            config = str(Path(__file__).with_name("default_planets.toml"))
 
         sun_pos, sun_vel = get_body_barycentric_posvel(body="sun", time=time)
         pos, vel = get_body_barycentric_posvel(body=name, time=time)

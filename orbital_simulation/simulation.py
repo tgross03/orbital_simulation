@@ -1,6 +1,8 @@
 from datetime import timedelta
 from itertools import combinations
 
+from pathlib import Path
+
 import astropy
 import matplotlib
 import matplotlib.animation as animation
@@ -11,9 +13,9 @@ import toml
 from astropy import units as u
 from astropy.constants import G
 from astropy.time import Time
-from tqdm.notebook import tqdm
+from tqdm.auto import tqdm
 
-from .simulation import Rigidbody
+from .rigidbodies import Rigidbody
 
 
 def gravitational_acceleration(body1: Rigidbody, body2: Rigidbody, G: float = G.value):
@@ -48,7 +50,6 @@ class Simulation:
     def __init__(
         self,
         dt: float,
-        rigidbodies: list[Rigidbody] = [],
         gravitational_constant: float = G.value,
     ):
         """
@@ -58,7 +59,8 @@ class Simulation:
         ----------
 
         """
-        self.rigidbodies = rigidbodies
+
+        self.rigidbodies = []
         self._dt = dt
         self.G = gravitational_constant
 
@@ -91,12 +93,16 @@ class Simulation:
 
     def load_planets(
         self,
-        time: astropy.Time = Time.now(),
+        time: astropy.time.Time = Time.now(),
         exclude: list[str] = [],
         cutoff_index: int = None,
         include_moon: bool = True,
-        config: str = "./default_planets.toml",
+        config: str or None = None,
     ):
+
+        if config is None:
+            config = str(Path(__file__).with_name("default_planets.toml"))
+
         for key in list(toml.load(config).keys())[:cutoff_index]:
 
             if not include_moon:
@@ -214,10 +220,10 @@ class Simulation:
         )
 
         if not to_scale:
-            fig.legend(
-                bbox_to_anchor=(0.35, 0.95),
-                frameon=True,
+            ax.legend(
+                loc="upper left",
                 ncols=np.max([len(self.rigidbodies) // 3, 1]),
+                fontsize="small"
             )
 
         ax.view_init(**view_param)
@@ -325,15 +331,17 @@ class Simulation:
         to_scale: bool = False,
         draw_acceleration: bool = False,
         plot_velocity: list[Rigidbody] = [],
+        dpi="figure",
     ):
 
         frames = self.n_it // steps_per_frame
 
         if len(plot_velocity) == 0:
-            fig = plt.figure(figsize=(7, 7), layout="constrained")
+            fig = plt.figure(layout="constrained")
             ax = fig.add_subplot(projection="3d")
+            vax = None
         else:
-            fig = plt.figure(figsize=(7, 7), layout="constrained")
+            fig = plt.figure(layout="constrained")
             ax = fig.add_subplot(4, 1, (1, 3), projection="3d")
             vax = fig.add_subplot(4, 1, 4)
 
@@ -393,7 +401,7 @@ class Simulation:
 
             fig.suptitle(
                 f"Simulation time: {str(timedelta(seconds=int(self._dt * frame)))} "
-                "| Step: {frame}"
+                f"| Step: {frame}"
             )
 
             fade_frames = fade if fade is not None else frame
@@ -507,8 +515,9 @@ class Simulation:
         writer = None
         if save_file[-4:].lower() == "gif":
             writer = animation.PillowWriter(
-                fps=1 / framesep, metadata=dict(artist="Me"), bitrate=1800
+                fps=1 / (framesep * 1e-3),
             )
+            writer.setup(fig=fig, outfile=save_file, dpi=dpi)
 
         ani = animation.FuncAnimation(
             fig=fig, func=update, frames=frames, interval=framesep
@@ -517,11 +526,11 @@ class Simulation:
         def progress_func(_i, _n):
             progress_bar.update(1)
 
-        with tqdm(total=frames, desc="Saving video") as progress_bar:
+        with tqdm(total=frames, desc="Saving animation") as progress_bar:
             if writer is None:
-                ani.save(save_file, progress_callback=progress_func)
+                ani.save(save_file, progress_callback=progress_func, dpi=dpi)
             else:
-                ani.save(save_file, writer=writer, progress_callback=progress_func)
+                ani.save(save_file, writer=writer, progress_callback=progress_func, dpi=dpi)
 
         return fig, ax
 
