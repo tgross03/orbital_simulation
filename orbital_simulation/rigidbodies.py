@@ -7,6 +7,8 @@ from astropy.coordinates import get_body_barycentric_posvel
 from astropy.time import Time
 from pathlib import Path
 
+from numpy.typing import ArrayLike
+
 MARKER_SIZE = mpl.rcParams["lines.markersize"]
 
 
@@ -23,15 +25,15 @@ class Rigidbody:
         exclude_bodies=[],
         body_alpha=1,
         trail_alpha=1,
-        intrinsic_acceleration=np.zeros(3),
+        intrinsic_acceleration=[0, 0, 0],
         marker="o",
         fix_marker_size=False,
     ):
 
         self.name = name
         self.acceleration = np.zeros(3)
-        self.positions = np.array(position)
-        self.velocities = np.array(velocity)
+        self.positions = np.array(position.copy())
+        self.velocities = np.array(velocity.copy())
         self.mass = mass
         self.radius = radius
         self.body_color = body_color
@@ -39,12 +41,12 @@ class Rigidbody:
         self.exclude_bodies = exclude_bodies.copy()
         self.body_alpha = body_alpha
         self.trail_alpha = trail_alpha
-        self.intrinsic_acceleration = np.array(intrinsic_acceleration)
+        self.intrinsic_acceleration = np.array(intrinsic_acceleration.copy()).copy()
         self.accelerations = np.array([])
         self.marker = marker
         self.fix_marker_size = fix_marker_size
 
-        self._original_state = self.get_state()
+        self._original_state = self._copy_state(self.get_state())
 
     def _copy_state(self, state):
         state = state.copy()
@@ -129,10 +131,42 @@ class Rigidbody:
     def stop_acceleration(self):
         self.intrinsic_acceleration = np.zeros(3)
 
-    def accelerate(self, acceleration, unit=u.meter / u.second**2):
-        self.intrinsic_acceleration = (
-            (acceleration * unit).to(u.meter / u.second**2).value
-        )
+    def accelerate(self, acceleration: float or ArrayLike, mode: str = "vector", unit=u.meter / u.second**2, relative_to=None):
+
+        if relative_to is None:
+            v_rel = np.zeros(3)
+        else:
+            v_rel = relative_to.get_current_velocity()
+
+        match mode:
+            case "vector":
+                self.intrinsic_acceleration = self.intrinsic_acceleration + (
+                    (acceleration * unit).to(u.meter / u.second**2).value
+                )
+            case "prograde":
+                if not np.isscalar(acceleration):
+                    raise ValueError("If mode is not set to 'vector', the acceleration has to be scalar")
+
+                self.intrinsic_acceleration = self.intrinsic_acceleration + acceleration * (self.get_current_velocity() - v_rel) / np.linalg.norm(self.get_current_velocity() - v_rel)
+
+            case "retrograde":
+                if not np.isscalar(acceleration):
+                    raise ValueError("If mode is not set to 'vector', the acceleration has to be scalar")
+
+                self.intrinsic_acceleration = self.intrinsic_acceleration + -acceleration * (self.get_current_velocity() - v_rel) / np.linalg.norm(self.get_current_velocity() - v_rel)
+
+            case "radial_in":
+                if not np.isscalar(acceleration):
+                    raise ValueError("If mode is not set to 'vector', the acceleration has to be scalar")
+
+                self.intrinsic_acceleration = self.intrinsic_acceleration + -acceleration * (self.get_current_position() - relative_to.get_current_position()) / np.linalg.norm(self.get_current_position() - relative_to.get_current_position())
+
+            case "radial_out":
+                if not np.isscalar(acceleration):
+                    raise ValueError("If mode is not set to 'vector', the acceleration has to be scalar")
+
+                self.intrinsic_acceleration = self.intrinsic_acceleration + acceleration * (self.get_current_position() - relative_to.get_current_position()) / np.linalg.norm(self.get_current_position() - relative_to.get_current_position())
+
 
     def move(self, time):
         self.accelerations = np.append(self.accelerations, self.intrinsic_acceleration)

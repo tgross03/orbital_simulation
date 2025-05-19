@@ -183,6 +183,7 @@ class Simulation:
         to_scale: bool,
         vax: matplotlib.axes.Axes or None = None,
         plot_velocity: list[Rigidbody] = [],
+        legend: str = "axes",
     ):
 
         ax.set_xlabel(f"Relative $x$ in {str(unit)}")
@@ -220,17 +221,25 @@ class Simulation:
         )
 
         if not to_scale:
-            ax.legend(
-                loc="upper left",
-                ncols=np.max([len(self.rigidbodies) // 3, 1]),
-                fontsize="small"
-            )
+            if legend == "axes":
+                ax.legend(
+                    loc="upper left",
+                    ncols=np.max([len(self.rigidbodies) // 3, 1]),
+                    fontsize="small"
+                )
+            elif legend == "fig":
+                fig.legend(
+                    bbox_to_anchor=(0.35, 0.95),
+                    frameon=True,
+                    ncols=np.max([len(self.rigidbodies) // 3, 1]),
+                    fontsize="small"
+                )
 
         ax.view_init(**view_param)
 
         if vax is not None:
             vax.set_xlabel("Time in s")
-            vax.set_ylabel("Relative orbital velocity in m/s")
+            vax.set_ylabel("Rel. orbital velocity in m/s")
 
         return fig, ax, vax
 
@@ -331,17 +340,18 @@ class Simulation:
         to_scale: bool = False,
         draw_acceleration: bool = False,
         plot_velocity: list[Rigidbody] = [],
-        dpi="figure",
+        dpi: int or str = "figure",
+        legend: str = "axes",
     ):
 
         frames = self.n_it // steps_per_frame
 
         if len(plot_velocity) == 0:
-            fig = plt.figure(layout="constrained")
+            fig = plt.figure(figsize=(7, 7), layout="constrained")
             ax = fig.add_subplot(projection="3d")
             vax = None
         else:
-            fig = plt.figure(layout="constrained")
+            fig = plt.figure(figsize=(7, 7), layout="constrained")
             ax = fig.add_subplot(4, 1, (1, 3), projection="3d")
             vax = fig.add_subplot(4, 1, 4)
 
@@ -458,7 +468,7 @@ class Simulation:
                     quiver_plots[idx].remove()
                     quiver_plots[idx] = ax.quiver(
                         *current_position,
-                        *(current_acceleration * (self._get_max_length() * 1e-2)),
+                        *(current_acceleration * (self._get_max_length() * 1e-3)),
                         color=body.body_color,
                         zorder=1,
                     )
@@ -510,12 +520,14 @@ class Simulation:
             to_scale=to_scale,
             vax=vax,
             plot_velocity=plot_velocity,
+            legend = legend
         )
 
         writer = None
         if save_file[-4:].lower() == "gif":
             writer = animation.PillowWriter(
                 fps=1 / (framesep * 1e-3),
+                bitrate=-1,
             )
             writer.setup(fig=fig, outfile=save_file, dpi=dpi)
 
@@ -546,6 +558,7 @@ class Simulation:
         zoom_center: Rigidbody = None,
         save_file: str or None = None,
         to_scale: bool = False,
+        legend: str = "axes",
     ):
         fig = plt.figure(figsize=(7, 7), layout="constrained")
         ax = fig.add_subplot(projection="3d")
@@ -618,6 +631,7 @@ class Simulation:
             view_param=view_param,
             unit=unit,
             to_scale=to_scale,
+            legend=legend
         )
 
         if zoom_center is not None:
