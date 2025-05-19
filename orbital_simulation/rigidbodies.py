@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import matplotlib as mpl
 import numpy as np
 import toml
@@ -5,8 +7,6 @@ from astropy import units as u
 from astropy.constants import R_earth
 from astropy.coordinates import get_body_barycentric_posvel
 from astropy.time import Time
-from pathlib import Path
-
 from numpy.typing import ArrayLike
 
 MARKER_SIZE = mpl.rcParams["lines.markersize"]
@@ -131,7 +131,13 @@ class Rigidbody:
     def stop_acceleration(self):
         self.intrinsic_acceleration = np.zeros(3)
 
-    def accelerate(self, acceleration: float or ArrayLike, mode: str = "vector", unit=u.meter / u.second**2, relative_to=None):
+    def accelerate(
+        self,
+        acceleration: float or ArrayLike,
+        mode: str = "vector",
+        unit=u.meter / u.second**2,
+        relative_to=None,
+    ):
 
         if relative_to is None:
             v_rel = np.zeros(3)
@@ -145,28 +151,63 @@ class Rigidbody:
                 )
             case "prograde":
                 if not np.isscalar(acceleration):
-                    raise ValueError("If mode is not set to 'vector', the acceleration has to be scalar")
+                    raise ValueError(
+                        "If mode is not set to 'vector', "
+                        "the acceleration has to be scalar"
+                    )
 
-                self.intrinsic_acceleration = self.intrinsic_acceleration + acceleration * (self.get_current_velocity() - v_rel) / np.linalg.norm(self.get_current_velocity() - v_rel)
+                self.intrinsic_acceleration = (
+                    self.intrinsic_acceleration
+                    + acceleration
+                    * (self.get_current_velocity() - v_rel)
+                    / np.linalg.norm(self.get_current_velocity() - v_rel)
+                )
 
             case "retrograde":
                 if not np.isscalar(acceleration):
-                    raise ValueError("If mode is not set to 'vector', the acceleration has to be scalar")
+                    raise ValueError(
+                        "If mode is not set to 'vector', "
+                        "the acceleration has to be scalar"
+                    )
 
-                self.intrinsic_acceleration = self.intrinsic_acceleration + -acceleration * (self.get_current_velocity() - v_rel) / np.linalg.norm(self.get_current_velocity() - v_rel)
+                self.intrinsic_acceleration = (
+                    self.intrinsic_acceleration
+                    + -acceleration
+                    * (self.get_current_velocity() - v_rel)
+                    / np.linalg.norm(self.get_current_velocity() - v_rel)
+                )
 
             case "radial_in":
                 if not np.isscalar(acceleration):
-                    raise ValueError("If mode is not set to 'vector', the acceleration has to be scalar")
+                    raise ValueError(
+                        "If mode is not set to 'vector', "
+                        "the acceleration has to be scalar"
+                    )
 
-                self.intrinsic_acceleration = self.intrinsic_acceleration + -acceleration * (self.get_current_position() - relative_to.get_current_position()) / np.linalg.norm(self.get_current_position() - relative_to.get_current_position())
+                self.intrinsic_acceleration = (
+                    self.intrinsic_acceleration
+                    + -acceleration
+                    * (self.get_current_position() - relative_to.get_current_position())
+                    / np.linalg.norm(
+                        self.get_current_position() - relative_to.get_current_position()
+                    )
+                )
 
             case "radial_out":
                 if not np.isscalar(acceleration):
-                    raise ValueError("If mode is not set to 'vector', the acceleration has to be scalar")
+                    raise ValueError(
+                        "If mode is not set to 'vector', "
+                        "the acceleration has to be scalar"
+                    )
 
-                self.intrinsic_acceleration = self.intrinsic_acceleration + acceleration * (self.get_current_position() - relative_to.get_current_position()) / np.linalg.norm(self.get_current_position() - relative_to.get_current_position())
-
+                self.intrinsic_acceleration = (
+                    self.intrinsic_acceleration
+                    + acceleration
+                    * (self.get_current_position() - relative_to.get_current_position())
+                    / np.linalg.norm(
+                        self.get_current_position() - relative_to.get_current_position()
+                    )
+                )
 
     def move(self, time):
         self.accelerations = np.append(self.accelerations, self.intrinsic_acceleration)
@@ -181,9 +222,7 @@ class Rigidbody:
         )
 
     @classmethod
-    def from_name(
-        cls, name, time=Time.now(), marker="o", config=None
-    ):
+    def from_name(cls, name, time=Time.now(), marker="o", config=None):
 
         if config is None:
             config = str(Path(__file__).with_name("default_planets.toml"))

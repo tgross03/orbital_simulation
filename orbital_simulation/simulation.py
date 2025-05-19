@@ -1,6 +1,5 @@
 from datetime import timedelta
 from itertools import combinations
-
 from pathlib import Path
 
 import astropy
@@ -225,14 +224,14 @@ class Simulation:
                 ax.legend(
                     loc="upper left",
                     ncols=np.max([len(self.rigidbodies) // 3, 1]),
-                    fontsize="small"
+                    fontsize="small",
                 )
             elif legend == "fig":
                 fig.legend(
                     bbox_to_anchor=(0.35, 0.95),
                     frameon=True,
                     ncols=np.max([len(self.rigidbodies) // 3, 1]),
-                    fontsize="small"
+                    fontsize="small",
                 )
 
         ax.view_init(**view_param)
@@ -520,7 +519,7 @@ class Simulation:
             to_scale=to_scale,
             vax=vax,
             plot_velocity=plot_velocity,
-            legend = legend
+            legend=legend,
         )
 
         writer = None
@@ -542,7 +541,9 @@ class Simulation:
             if writer is None:
                 ani.save(save_file, progress_callback=progress_func, dpi=dpi)
             else:
-                ani.save(save_file, writer=writer, progress_callback=progress_func, dpi=dpi)
+                ani.save(
+                    save_file, writer=writer, progress_callback=progress_func, dpi=dpi
+                )
 
         return fig, ax
 
@@ -631,7 +632,7 @@ class Simulation:
             view_param=view_param,
             unit=unit,
             to_scale=to_scale,
-            legend=legend
+            legend=legend,
         )
 
         if zoom_center is not None:
