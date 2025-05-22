@@ -23,7 +23,7 @@ class Rigidbody:
         radius: float,
         body_color: str,
         trail_color: str,
-        exclude_bodies: list = [],
+        exclude_bodies: list["Rigidbody"] = [],
         body_alpha: float = 1,
         trail_alpha: float = 1,
         intrinsic_acceleration: list[float] = [0, 0, 0],
