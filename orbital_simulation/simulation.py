@@ -82,7 +82,7 @@ class Simulation:
         self.n_it = 0
 
     @classmethod
-    def copy(cls, simulation):
+    def copy(cls, simulation: "Simulation"):
         """
         Creates a deep copy of a simulation instance.
 
@@ -145,7 +145,10 @@ class Simulation:
         """
 
         if rigidbody.name in [body.name for body in self.rigidbodies]:
-            raise KeyError("Th")
+            raise KeyError(
+                "This body is already added to this Simulation! "
+                "Rigidbody names have to be unique!"
+            )
 
         self.rigidbodies.append(rigidbody.copy())
 
@@ -157,7 +160,6 @@ class Simulation:
         include_moon: bool = True,
         config: str or None = None,
     ):
-
         """
         Loads the all the planets (rigidbodies) from the given config.
 
@@ -194,7 +196,6 @@ class Simulation:
         exclude = [name.lower() for name in exclude]
 
         for key in list(toml.load(config).keys())[:cutoff_index]:
-
             if not include_moon:
                 exclude.append("moon")
 
@@ -621,7 +622,6 @@ class Simulation:
         ]
 
         def update(frame):
-
             frame += 1
             frame = np.min([frame * steps_per_frame, self.n_it])
 
@@ -633,7 +633,6 @@ class Simulation:
             fade_frames = fade if fade is not None else frame
 
             for idx, body in zip(np.arange(len(self.rigidbodies)), self.rigidbodies):
-
                 if center_body is None:
                     positions = (
                         (
@@ -849,7 +848,6 @@ class Simulation:
         )
 
         for body in self.rigidbodies:
-
             if center_body is None:
                 positions = (
                     (np.reshape(body.positions, (-1, 3)) * u.meter).to(unit).value
