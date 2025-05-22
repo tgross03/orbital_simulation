@@ -32,13 +32,13 @@ def gravitational_acceleration(body1: Rigidbody, body2: Rigidbody, G: float = G.
 
     G : float, optional
     The gravitational constant which will be used for the calculation.
-    Default is ``astropy.constants.G``.
+    Default is the numerical value of ``astropy.constants.G``.
 
     Returns
     -------
 
     a : np.ndarray
-    The gravitational acceleration of body1 towards body2.
+    The gravitational acceleration of body1 towards body2 in meters / second**2.
 
     """
     diff = body1.get_current_position() - body2.get_current_position()
@@ -49,17 +49,32 @@ class Simulation:
     def __init__(
         self,
         dt: float,
+        bodies: list = [],
         gravitational_constant: float = G.value,
     ):
         """
-        Initializes a n-body simulation.
+        Initializes a new n-body simulation.
 
         Parameters
         ----------
 
+        dt : float
+        The time difference between every simulation.
+
+        bodies : list[Rigidbody], optional
+        A list of rigidbodies to add to the simulation.
+
+        G : float, optional
+        The gravitational constant which will be used for the calculation.
+        Default is the numerical value of ``astropy.constants.G``.
+
         """
 
         self.rigidbodies = []
+
+        for body in bodies:
+            self.add_rigidbody(body)
+
         self._dt = dt
         self.G = gravitational_constant
 
@@ -68,6 +83,16 @@ class Simulation:
 
     @classmethod
     def copy(cls, simulation):
+        """
+        Creates a deep copy of a simulation instance.
+
+        Parameters
+        ----------
+
+        simulation: Simulation
+        The simulation to copy.
+
+        """
 
         cls = cls()
 
@@ -81,14 +106,48 @@ class Simulation:
         return cls
 
     def get_rigidbody_by_name(self, name: str):
+        """
+        Gets the rigidbody from the simulation with the given name.
+
+        Parameters
+        ----------
+
+        name : str
+        The name of the wanted rigidbody (case sensitive!)
+
+        Returns
+        -------
+
+        body : Rigidbody
+        The body with the given name or `None` if no rigidbody with this
+        name has been added to the simulation.
+
+        """
+
         for body in self.rigidbodies:
             if body.name == name:
                 return body
 
-        return None
+        raise KeyError(
+            "There was no rigidbody with this name present in this simulation."
+        )
 
     def add_rigidbody(self, rigidbody: Rigidbody):
-        self.rigidbodies.append(rigidbody)
+        """
+        Adds a rigidbody to the simulation.
+
+        Parameters
+        ----------
+
+        rigidbody : Rigidbody
+        The rigidbody to add to the simulation.
+
+        """
+
+        if rigidbody.name in [body.name for body in self.rigidbodies]:
+            raise KeyError("Th")
+
+        self.rigidbodies.append(rigidbody.copy())
 
     def load_planets(
         self,
@@ -99,20 +158,55 @@ class Simulation:
         config: str or None = None,
     ):
 
+        """
+        Loads the all the planets (rigidbodies) from the given config.
+
+        Parameters
+        ----------
+
+        time : astropy.time.Time, optional
+        The time for which the positions and velocities of the rigidbodies
+        should be loaded.
+        Default is current time.
+
+        exclude : list[str], optional
+        A list of names of rigidbodies to exclude from the simulation
+        (e.g. `Sun` or `Jupiter`)
+
+        cutoff_index : int or None, optional
+        The index to which the rigidbodies should be added from the config.
+        The order of the rigidbodies is determined by their order in the config.
+        Default is `None`, meaning the whole list is added.
+
+        include_moon : bool, optional
+        Wether to include the earth's moon in the simulation.
+        Default is `True`.
+
+        config : str or None, optional
+        The path to the config. Default is `None`, meaning that the pre-set
+        config from the package will be used.
+
+        """
+
         if config is None:
             config = str(Path(__file__).with_name("default_planets.toml"))
+
+        exclude = [name.lower() for name in exclude]
 
         for key in list(toml.load(config).keys())[:cutoff_index]:
 
             if not include_moon:
                 exclude.append("moon")
 
-            if key not in exclude:
+            if key.lower() not in exclude:
                 self.add_rigidbody(
                     Rigidbody.from_name(name=key, time=time, config=config)
                 )
 
     def _get_max_length(self):
+        """
+        Gets the farthest difference between two points from any rigidbody's trajectory.
+        """
         return np.max(
             np.abs(
                 [
@@ -126,25 +220,55 @@ class Simulation:
         )
 
     def run(self, time: float):
+        """
+        Runs the simulation for a given time.
+
+        Parameters
+        ----------
+
+        time : float
+        The time to run the simulation for in seconds.
+        This can be arbitrarily often, meaning that it is possible to
+        run the simulation for 30 seconds, edit some things (e.g. change velocities
+        or accelerations) and then run it again for 45 seconds.
+        The trajectories of the first run will then be continued.
+
+        """
         for t in tqdm(
             np.arange(start=self.time, stop=self.time + time + 1, step=self._dt),
             desc="Simulating steps",
         ):
             self.time = t
             self.n_it += 1
-            self.step()
+            self._step()
 
     def reset(self):
+        """
+        Reset the simulation to its initial state.
+        WARNING: This will delete all your previously simulated trajectories!
+        """
         self.time = 0
         self.n_it = 0
         for body in self.rigidbodies:
             body.reset()
 
     def info(self):
+        """
+        Prints all the information about the simulation and the contained rigidbodies.
+        """
+        print(f"======== {len(self.rigidbodies)}-body Simulation =========")
+        print(self.__dict__)
+
         for body in self.rigidbodies:
             body.info()
 
-    def step(self):
+        print("===========================")
+
+    def _step(self):
+        """
+        Performs all calculations for the current timestep and
+        moves all rigidbodies according to their updated accelerations and velocities.
+        """
 
         for body in self.rigidbodies:
             body.acceleration = np.array((0, 0, 0))
@@ -170,7 +294,7 @@ class Simulation:
     def _configure_axis(
         self,
         fig: matplotlib.figure.Figure,
-        ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
+        ax: mpl_toolkits.mplot3d.axes3d.Axes3D or matplotlib.axes.Axes,
         log: bool,
         center_body: Rigidbody,
         center_view: bool,
@@ -184,6 +308,9 @@ class Simulation:
         plot_velocity: list[Rigidbody] = [],
         legend: str = "axes",
     ):
+        """
+        Configures the axes properties for the plots.
+        """
 
         ax.set_xlabel(f"Relative $x$ in {str(unit)}")
         ax.set_ylabel(f"Relative $y$ in {str(unit)}")
@@ -245,7 +372,7 @@ class Simulation:
     def _set_axis_limits(
         self,
         fig: matplotlib.figure.Figure,
-        ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
+        ax: mpl_toolkits.mplot3d.axes3d.Axes3D or matplotlib.axes.Axes,
         center_body: Rigidbody,
         center_view: bool,
         zoom_factor: float,
@@ -254,6 +381,9 @@ class Simulation:
         vax: matplotlib.axes.Axes or None = None,
         plot_velocity: list[Rigidbody] = [],
     ):
+        """
+        Configures the axis limits for the current plot.
+        """
 
         limits = [None, None, None]
 
@@ -326,13 +456,13 @@ class Simulation:
         self,
         steps_per_frame: int,
         framesep: int,
-        save_file: str = "animation.mp4",
+        save_file: str,
         fade: int or None = None,
-        log=False,
-        unit=u.meter,
-        view_param=dict(elev=20, azim=-45, roll=0),
-        center_body: Rigidbody = None,
-        center_view: bool = False,
+        log: bool = False,
+        unit: astropy.units.Unit = u.meter,
+        view_param: dict = dict(elev=20, azim=-45, roll=0),
+        center_body: Rigidbody or None = None,
+        center_view: bool = True,
         aspect_scale: tuple[float] = (1.0, 1.0, 1.0),
         zoom_factor: float = 1.0,
         zoom_center: Rigidbody or None = None,
@@ -342,6 +472,93 @@ class Simulation:
         dpi: int or str = "figure",
         legend: str = "axes",
     ):
+        """
+
+        Creates an animation
+
+        Parameters
+        ----------
+
+        steps_per_frame : int
+        The amount of simulation steps that should be covered in one frame.
+
+        framesep : int
+        The seperation between each frame in milliseconds.
+        The framerate (fps) is calculated by 1 / framesep.
+
+        save_file : str
+        The path of the output file. Available file types are: MP4 and GIF
+
+        fade : int or None, optional
+        The number of frames after which the trajectories will fade out.
+        Default is `None`, meaning no fade effect.
+
+        log : bool, optional
+        Apply a symlog norm to all axes. This feature is mostly not needed and untested.
+        Default is `False`.
+
+        unit : astropy.units.Unit, optional
+        The unit used for all lengths. Default is meter (`astropy.units.meter`).
+
+        view_param : dict, optional
+        The parameters to pass to the mpl_toolkits.mplot3d.axes3d.Axes3D.view_init
+        method, determining the view point of the animation.
+
+        center_body : Rigidbody or None, optional
+        The body which should be the center of the reference frame.
+
+        center_view : bool, optional
+        Wether the axes limits should be set, so that they are static during
+        the animation. This is done by setting the limits to the maximum and minimum
+        values that are ever reached by any body. This option is recommended to
+        get static an optically stable plot.
+        Default is `True`.
+
+        aspect_scale : tuple[float], optional
+        The factor to multiply the aspect of the axes by. A value of `(1, 1, 1)`
+        says, that the axes (x, y, z) should be scaled equally, which preserves
+        the relative true scale of the axes.
+        Default is equal scale, meaning `(1, 1, 1)`.
+
+        zoom_factor : float, optional
+        The factor by which the scale of the axes is enlarged.
+        Default is `1`, meaning no zoom.
+
+        zoom_center : Rigidbody or None, optional
+        The center of the zoom. Default is `None`.
+
+        to_scale : bool, optional
+        Experimental feature, which increases the size of the markers of the planets.
+        This is not really 'to scale', but increases or decreases the size of the
+        markers according to
+        the radius of the rigidbodies. If set, this disables the display of a legend.
+        Default is `False`.
+
+        draw_acceleration : bool, optional
+        Wether to show arrows in the direction of the intrinsic acceleration.
+        Default is `False`.
+
+        plot_velocity : list[Rigidbody], optional
+        A list of rigidbodies for which to show a plot of their relative orbital
+        velocity. If this list is empty, there will be no plot of the orbital
+        velocities.
+
+        dpi : int or str, optional
+        The dpi of the animation. Default is `figure`, meaning that the dpi is
+        determined by the size of the figure
+
+        legend : str, optional
+        Determines the type of the legend. If set to `fig` the legend is
+        drawn in the reference frame of the figure, if set to `axes` the
+        legend is drawn onto the axes itself. Default is `axes`.
+
+        Returns
+        -------
+
+        fig, ax : matplotlib.figure.Figure, mpl_toolkits.mplot3d.axes3d.Axes3D
+        The figure and axes objects.
+
+        """
 
         frames = self.n_it // steps_per_frame
 
@@ -552,15 +769,78 @@ class Simulation:
         log: bool = False,
         unit: astropy.units.Unit = u.meter,
         view_param: dict = dict(elev=20, azim=-45, roll=0),
-        center_body: Rigidbody = None,
+        center_body: Rigidbody or None = None,
         center_view: bool = False,
         aspect_scale: tuple[float] = (1.0, 1.0, 1.0),
         zoom_factor: float = 1.0,
-        zoom_center: Rigidbody = None,
+        zoom_center: Rigidbody or None = None,
         save_file: str or None = None,
         to_scale: bool = False,
         legend: str = "axes",
     ):
+        """
+        Plots the current state of the simulation.
+
+        Parameters
+        ----------
+
+        log : bool, optional
+        Apply a symlog norm to all axes. This feature is mostly not needed and untested.
+        Default is `False`.
+
+        unit : astropy.units.Unit, optional
+        The unit used for all lengths. Default is meter (`astropy.units.meter`).
+
+        view_param : dict, optional
+        The parameters to pass to the mpl_toolkits.mplot3d.axes3d.Axes3D.view_init
+        method, determining the view point of the animation.
+
+        center_body : Rigidbody or None, optional
+        The body which should be the center of the reference frame.
+
+        center_view : bool, optional
+        Wether the axes limits should be set, so that they are static during
+        the animation. This is done by setting the limits to the maximum and
+        minimum values that are ever reached by any body. This option is recommended
+        to get static an optically stable plot.
+        Default is `True`.
+
+        aspect_scale : tuple[float], optional
+        The factor to multiply the aspect of the axes by. A value of `(1, 1, 1)`
+        says, that the axes (x, y, z) should be scaled equally, which preserves
+        the relative true scale of the axes.
+        Default is equal scale, meaning `(1, 1, 1)`.
+
+        zoom_factor : float, optional
+        The factor by which the scale of the axes is enlarged. Default is `1`,
+        meaning no zoom.
+
+        zoom_center : Rigidbody or None, optional
+        The center of the zoom. Default is `None`
+
+        save_file : str or None, optional
+        The path of the output file. Default is `None`, meaning no
+        file will be saved.
+
+        to_scale : bool, optional
+        Experimental feature, which increases the size of the markers of the planets.
+        This is not really 'to scale', but increases or decreases the size of the
+        markers according to the radius of the rigidbodies. If set, this disables
+        the display of a legend. Default is `False`.
+
+        legend : str, optional
+        Determines the type of the legend. If set to `fig` the legend is drawn
+        in the reference frame of the figure, if set to `axes` the legend is
+        drawn onto the axes itself. Default is `axes`.
+
+        Returns
+        -------
+
+        fig, ax : matplotlib.figure.Figure, matplotlib.axes.Axes
+        The figure and axes objects.
+
+        """
+
         fig = plt.figure(figsize=(7, 7), layout="constrained")
         ax = fig.add_subplot(projection="3d")
 
