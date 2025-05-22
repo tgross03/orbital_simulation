@@ -96,8 +96,8 @@ class Rigidbody:
 
         self.name = name
         self.acceleration = np.zeros(3)
-        self.positions = np.array(position.copy())
-        self.velocities = np.array(velocity.copy())
+        self.positions = np.array(position)
+        self.velocities = np.array(velocity)
         self.mass = mass
         self.radius = radius
         self.body_color = body_color

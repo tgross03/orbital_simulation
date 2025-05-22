@@ -150,7 +150,7 @@ class Simulation:
                 "Rigidbody names have to be unique!"
             )
 
-        self.rigidbodies.append(rigidbody.copy())
+        self.rigidbodies.append(Rigidbody.copy(rigidbody))
 
     def load_planets(
         self,
