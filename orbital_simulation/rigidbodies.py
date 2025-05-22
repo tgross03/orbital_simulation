@@ -84,7 +84,7 @@ class Rigidbody:
         return "\n".join("%s: %s" % item for item in self.get_state().items())
 
     def info(self):
-        print(f"---- Info for {self.name} ----")
+        print(f"------ Rigidbody: {self.name} ------")
         print(str(self))
 
     def get_current_position(self):
