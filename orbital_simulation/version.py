@@ -1,4 +1,5 @@
-# This file was adapted from https://github.com/radionets-project/pyvisgen/blob/main/pyvisgen/version.py
+# This file was adapted from
+# https://github.com/radionets-project/pyvisgen/blob/main/pyvisgen/version.py
 
 # this is adapted from https://github.com/astropy/astropy/blob/master/astropy/version.py
 # see https://github.com/astropy/astropy/pull/10774 for a discussion on why this needed.
