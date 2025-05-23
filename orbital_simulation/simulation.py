@@ -844,7 +844,8 @@ class Simulation:
         ax = fig.add_subplot(projection="3d")
 
         fig.suptitle(
-            f"Simulation time: {timedelta(seconds=int(self.time))} | Step: {self.n_it}"
+            f"Simulation time:\t{timedelta(seconds=int(self.time))}\t|"
+            "\tStep:\t{self.n_it}"
         )
 
         for body in self.rigidbodies:

@@ -172,7 +172,8 @@ class Rigidbody:
         cls.__dict__ = body.get_state()
 
         if name is not None:
-            cls.name = name
+            cls._original_state["name"] = name
+            cls.reset()
         return cls
 
     def reset(self):
