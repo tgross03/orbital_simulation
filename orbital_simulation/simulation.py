@@ -845,7 +845,7 @@ class Simulation:
 
         fig.suptitle(
             f"Simulation time:\t{timedelta(seconds=int(self.time))}\t|"
-            "\tStep:\t{self.n_it}"
+            f"\tStep:\t{self.n_it}"
         )
 
         for body in self.rigidbodies:
